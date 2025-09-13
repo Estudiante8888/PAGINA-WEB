@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Cola de Nombres</title>
+    <link rel="stylesheet" href="/static/CSS/Style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Sistema de Cola de Nombres</h1>
+        
+        <form id="form-agregar">
+            <div class="form-group">
+                <input type="text" id="nombre-input" placeholder="Ingresa un nombre" required>
+                <button type="submit" class="btn btn-primary">Agregar a la lista</button>
+            </div>
+        </form>
+        
+        <button id="btn-atender" class="btn btn-danger" style="display: none;">Atender al siguiente</button>
+        
+        <button id="btn-limpiar" class="btn" style="background-color: #6c757d; color: white; margin-left: 10px; display: none;">Limpiar lista</button>
+        
+        <div class="stats">
+            Total de personas en cola: <span id="total-personas">0</span>
+        </div>
+        
+        <div class="lista-nombres">
+            <h3>Cola de atención:</h3>
+            <div id="lista-container">
+                <div class="empty-message" id="mensaje-vacio">
+                    No hay personas en la cola
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let nombres = [];
+
+        function cargarNombres() {
+            const nombresGuardados = localStorage.getItem('cola-nombres');
+            if (nombresGuardados) {
+                nombres = JSON.parse(nombresGuardados);
+            }
+            actualizarInterfaz();
+        }
+
+        function guardarNombres() {
+            localStorage.setItem('cola-nombres', JSON.stringify(nombres));
+        }
+
+        function actualizarInterfaz() {
+            const listaContainer = document.getElementById('lista-container');
+            const totalPersonas = document.getElementById('total-personas');
+            const btnAtender = document.getElementById('btn-atender');
+            const btnLimpiar = document.getElementById('btn-limpiar');
+            const mensajeVacio = document.getElementById('mensaje-vacio');
+
+            totalPersonas.textContent = nombres.length;
+
+            if (nombres.length > 0) {
+                btnAtender.style.display = 'inline-block';
+                btnLimpiar.style.display = 'inline-block';
+                mensajeVacio.style.display = 'none';
+            } else {
+                btnAtender.style.display = 'none';
+                btnLimpiar.style.display = 'none';
+                mensajeVacio.style.display = 'block';
+            }
+
+            const items = listaContainer.querySelectorAll('.nombre-item');
+            items.forEach(item => item.remove());
+
+            nombres.forEach((nombre, index) => {
+                const div = document.createElement('div');
+                div.className = 'nombre-item';
+                div.innerHTML = `${index + 1}. ${nombre}`;
+                
+                if (index === 0) {
+                    div.innerHTML += ` <span style="color: #28a745; font-weight: bold;">← Siguiente en ser atendido</span>`;
+                }
+                
+                listaContainer.appendChild(div);
+            });
+        }
+
+        function agregarNombre(nombre) {
+            if (nombre && nombre.trim()) {
+                nombres.push(nombre.trim());
+                guardarNombres();
+                actualizarInterfaz();
+            }
+        }
+
+        function atenderSiguiente() {
+            if (nombres.length > 0) {
+                const nombreAtendido = nombres.shift();
+                guardarNombres();
+                actualizarInterfaz();
+                
+                mostrarMensaje(`✓ ${nombreAtendido} ha sido atendido`);
+            }
+        }
+
+        function limpiarLista() {
+            if (confirm('¿Estás seguro de que quieres eliminar todos los nombres de la lista?')) {
+                nombres = [];
+                guardarNombres();
+                actualizarInterfaz();
+                mostrarMensaje('Lista limpiada completamente');
+            }
+        }
+
+        function mostrarMensaje(mensaje) {
+            const div = document.createElement('div');
+            div.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background-color: #28a745;
+                color: white;
+                padding: 10px 20px;
+                border-radius: 5px;
+                z-index: 1000;
+                animation: slideIn 0.3s ease;
+            `;
+            div.textContent = mensaje;
+            document.body.appendChild(div);
+
+            setTimeout(() => {
+                div.remove();
+            }, 3000);
+        }
+
+        document.getElementById('form-agregar').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const input = document.getElementById('nombre-input');
+            agregarNombre(input.value);
+            input.value = '';
+        });
+
+        document.getElementById('btn-atender').addEventListener('click', atenderSiguiente);
+        document.getElementById('btn-limpiar').addEventListener('click', limpiarLista);
+
+        cargarNombres();
+    </script>
+
+    <style>
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+    </style>
+    </div>
+</body>
+</html>
